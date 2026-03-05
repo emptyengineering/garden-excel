@@ -31,7 +31,10 @@
     "example:processors": "bun run examples/04-processors.tsx",
     "example:merged": "bun run examples/05-merged-cells.tsx",
     "example:templates": "bun run examples/06-templates.tsx",
-    "example:images": "bun run examples/07-images.tsx"
+    "example:images": "bun run examples/07-images.tsx",
+    "docs:dev": "cd docs && bun run dev",
+    "docs:build": "cd docs && bun run build",
+    "docs:preview": "cd docs && bun run preview"
   },
   "dependencies": {
     "@types/culori": "^4.0.0",

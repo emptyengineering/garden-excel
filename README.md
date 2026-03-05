@@ -66,6 +66,15 @@ bun run example:images      # Embedded images
 
 Output files are generated in `examples/output/`.
 
+## 📖 Documentation
+
+Local docs are built with Astro Starlight.
+
+```bash
+bun install --cwd docs
+bun run docs:dev
+```
+
 ## 🎨 Styling with Tailwind Classes
 
 Use the `tailwindExcel()` utility to convert Tailwind-style classes to Excel styles:

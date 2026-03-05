@@ -175,10 +175,10 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
     if (node.props.formula) {
       const v = node.props.value;
       cell.value = { formula: node.props.formula };
-      if (v && isPrimitive(cell.value)) {
+      if (v !== undefined && isPrimitive(v)) {
         cell.value = Object.assign({}, cell.value, { result: v });
       }
-    } else if (node.props.value) {
+    } else if (node.props.value !== undefined) {
       cell.value = node.props.value;
     }
     // Merge precedence: cell > row > group > column
@@ -582,19 +582,6 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
         children: cells.filter((c): c is CellNode => c !== null),
       },
     });
-    // --- DEBUG: Print compact grid row ---
-    const debugRow = cells
-      .map((cell) => {
-        if (cell === null) return '.';
-        if (
-          (cell.props.colSpan && cell.props.colSpan > 1) ||
-          (cell.props.rowSpan && cell.props.rowSpan > 1)
-        )
-          return 'M';
-        return 'N';
-      })
-      .join(' ');
-    console.log(`[TEMPLATE DEBUG] Row ${rowNumber}: ${debugRow}`);
   }
   // After extracting rows, extract images
   const imageNodes: ImageNode[] = [];
@@ -759,7 +746,7 @@ function expandTemplateRows(
   _closePlaceholder = '}}',
   _rangeRows: number = 0,
 ): CellValue[][] {
-  const placeholderRegex = /{{s*(.*?)s*}}/;
+  const placeholderRegex = /\{\{\s*(.*?)\s*\}\}/;
   const columnsConfig = data.columns || [];
   const template = {
     columns: { matches: 0, rowStartIndex: -1, colStartIndex: -1 },

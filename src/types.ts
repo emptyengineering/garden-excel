@@ -57,9 +57,11 @@ export interface CellProps extends RenderProps {
 export interface TemplateProps {
   src: string;
   data?: any;
+  rangeRows?: number;
 }
 
 export interface ImageProps {
+  src?: string;
   buffer?: Buffer | string; // Can be a Buffer or base64 string
   extension: 'jpeg' | 'png' | 'gif';
   range?: string; // e.g. 'A1:D10' or ExcelJS ImageRange

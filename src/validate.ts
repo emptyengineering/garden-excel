@@ -41,6 +41,19 @@ export function validateTree(node: AnyNode | AnyNode[], parentType?: string) {
       if (parentType !== 'Row' && parentType !== 'Group') {
         throw new Error('<Cell> can only be a child of <Row> or <Group>.');
       }
+      if (children) validateTree(children, 'Cell');
+      break;
+    case 'Image':
+      if (parentType !== 'Worksheet' && parentType !== 'Cell') {
+        throw new Error('<Image> can only be a child of <Worksheet> or <Cell>.');
+      }
+      if (children) throw new Error('<Image> cannot have children.');
+      break;
+    case 'Template':
+      if (parentType !== 'Worksheet' && parentType !== 'Group') {
+        throw new Error('<Template> can only be a child of <Worksheet> or <Group>.');
+      }
+      if (children) throw new Error('<Template> cannot have children.');
       break;
   }
 }
