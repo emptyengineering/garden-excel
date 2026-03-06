@@ -1,0 +1,34 @@
+---
+title: Basic Example
+description: The smallest complete workbook example in the repository.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/01-basic.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-01.png"
+  imageAlt="Basic workbook output"
+  source={source}
+  sourcePath="examples/01-basic.tsx"
+>
+  ## What it demonstrates
+
+  - workbook and worksheet structure
+  - column widths
+  - plain rows and cells
+  - writing a generated workbook to disk
+
+  ## Why it matters
+
+  This is the shortest path from JSX to a valid `.xlsx` file. Use it as the starting point for new projects or when debugging larger layouts.
+</ExampleShowcase>
+
+## Key APIs used
+
+- `Workbook`
+- `Worksheet`
+- `Column`
+- `Row`
+- `Cell`
+- `render`

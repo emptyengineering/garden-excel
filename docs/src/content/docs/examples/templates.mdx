@@ -1,0 +1,34 @@
+---
+title: Templates Example
+description: Import an XLSX layout, expand rows, and keep building with JSX.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/06-templates.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-06.png"
+  imageAlt="Template example output"
+  source={source}
+  sourcePath="examples/06-templates.tsx"
+>
+  ## What it demonstrates
+
+  - loading a pre-built Excel template
+  - matching headers to data columns
+  - duplicating a placeholder row for each data item
+  - appending additional JSX rows after template output
+
+  ## Why it matters
+
+  Templates are the fastest route to branded spreadsheets when layout is easier to design in Excel than in code.
+</ExampleShowcase>
+
+## Important note
+
+Current template expansion focuses on row-based placeholders. The screenshot still shows non-row placeholders elsewhere in the template, which reflects the current implementation rather than a docs mistake.
+
+## Related docs
+
+- [Templates](/templates/)
+- [Template](/components/template/)

@@ -6,12 +6,12 @@
  * - Merge cells vertically with rowSpan
  * - Create complex table layouts
  *
- * Run: bun run example:merged
+ * Run: npm run example:merged (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Column, } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Column, Row, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
 
 const workbook = (
   <Workbook>

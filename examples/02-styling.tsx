@@ -11,12 +11,12 @@
  * - Alignment: text-left, text-center, text-right, align-top, align-center, align-bottom
  * - Text: text-nowrap
  *
- * Run: bun run example:styling
+ * Run: npm run example:styling (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Column, Group } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Column, Group, Row, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
 
 const workbook = (
   <Workbook>

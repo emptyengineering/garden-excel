@@ -5,19 +5,20 @@ description: Get from JSX to .xlsx in minutes.
 
 ## 1. Install
 ```bash
-bun add @workspace/excelwind
+bun add @gavin-lynch/excelwind
 ```
 
 ## 2. Enable the JSX runtime
 Use the JSX import source at the top of your file:
 ```tsx
-/** @jsxImportSource @workspace/excelwind */
+/** @jsxImportSource @gavin-lynch/excelwind */
 ```
 
 ## 3. Render a workbook
 ```tsx
-/** @jsxImportSource @workspace/excelwind */
-import { Workbook, Worksheet, Row, Cell, render } from "@workspace/excelwind";
+/** @jsxImportSource @gavin-lynch/excelwind */
+import { writeFile } from 'node:fs/promises';
+import { Workbook, Worksheet, Row, Cell, render } from "@gavin-lynch/excelwind";
 
 const workbook = await render(
   <Workbook>
@@ -30,7 +31,7 @@ const workbook = await render(
   </Workbook>
 );
 
-await Bun.write("hello.xlsx", await workbook.xlsx.writeBuffer());
+await writeFile('hello.xlsx', Buffer.from(await workbook.xlsx.writeBuffer()));
 ```
 
 ## 4. Next steps

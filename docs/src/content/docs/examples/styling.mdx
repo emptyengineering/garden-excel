@@ -1,0 +1,31 @@
+---
+title: Styling Example
+description: Shared styles, borders, alignment, and formatted totals.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/02-styling.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-02.png"
+  imageAlt="Styling example output"
+  source={source}
+  sourcePath="examples/02-styling.tsx"
+>
+  ## What it demonstrates
+
+  - `className` as the main styling API
+  - group-level style propagation for headers and row sections
+  - alignment and border utilities
+  - formatted numeric columns and totals
+
+  ## Why it matters
+
+  This is the best `className` example in the repo. It shows how far the Tailwind-like utility layer can go before you need raw ExcelJS styles.
+</ExampleShowcase>
+
+## Related docs
+
+- [Styling](/styling/)
+- [Properties](/properties/)
+- [Group](/components/group/)

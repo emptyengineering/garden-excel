@@ -1,0 +1,30 @@
+---
+title: Images Example
+description: Embed images from files and base64 data into worksheet content.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/07-images.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-07.png"
+  imageAlt="Images example output"
+  source={source}
+  sourcePath="examples/07-images.tsx"
+>
+  ## What it demonstrates
+
+  - base64-backed images
+  - file-backed images
+  - images nested inside cells
+  - explicit image positioning and sizing
+
+  ## Why it matters
+
+  This example shows that Excelwind can handle more than tabular data; it can produce branded or catalog-style spreadsheets too.
+</ExampleShowcase>
+
+## Related docs
+
+- [Images](/images/)
+- [Image](/components/image/)

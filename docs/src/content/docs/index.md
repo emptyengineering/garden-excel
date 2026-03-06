@@ -3,7 +3,12 @@ title: Overview
 description: Create Excel workbooks with JSX, no React required.
 ---
 
-Excelwind lets you generate Excel files using JSX syntax and Tailwind-style classes, backed by ExcelJS. It runs in Node.js or Bun and does not rely on React or any browser APIs.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/excelwind/branding/logo-dark.png" />
+  <img src="/excelwind/branding/logo-light.png" alt="Excelwind logo" width="420" />
+</picture>
+
+Excelwind lets you generate Excel files using JSX syntax and Tailwind-style classes, backed by ExcelJS. It runs in JavaScript runtimes with Node compatibility and does not rely on React or any browser APIs.
 
 ## What you get
 - Declarative JSX for worksheets, rows, and cells
@@ -13,14 +18,15 @@ Excelwind lets you generate Excel files using JSX syntax and Tailwind-style clas
 
 ## Installation
 ```bash
-bun add @workspace/excelwind
+bun add @gavin-lynch/excelwind
 ```
 
 ## Basic usage
 ```tsx
-/** @jsxImportSource @workspace/excelwind */
-import { Workbook, Worksheet, Row, Cell } from "@workspace/excelwind";
-import { render } from "@workspace/excelwind";
+/** @jsxImportSource @gavin-lynch/excelwind */
+import { writeFile } from 'node:fs/promises';
+import { Workbook, Worksheet, Row, Cell } from "@gavin-lynch/excelwind";
+import { render } from "@gavin-lynch/excelwind";
 
 const spreadsheet = (
   <Workbook>
@@ -39,5 +45,5 @@ const spreadsheet = (
 
 const workbook = await render(spreadsheet);
 const buffer = await workbook.xlsx.writeBuffer();
-await Bun.write("output.xlsx", buffer);
+await writeFile('output.xlsx', Buffer.from(buffer));
 ```

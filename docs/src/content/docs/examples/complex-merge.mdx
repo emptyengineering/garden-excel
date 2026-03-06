@@ -1,0 +1,30 @@
+---
+title: Complex Merge Example
+description: Stress-test mixed rowSpan and colSpan combinations.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/08-complex-merge.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-08.png"
+  imageAlt="Complex merge output"
+  source={source}
+  sourcePath="examples/08-complex-merge.tsx"
+>
+  ## What it demonstrates
+
+  - multiple merge regions sharing the same worksheet
+  - overlapping row-span and column-span constraints
+  - consistent styling across complex merged sections
+  - a useful regression layout for merge behavior
+
+  ## Why it matters
+
+  If you are building dashboards, planning boards, or matrix-like reports, this is the example that most closely reflects the hard edge cases.
+</ExampleShowcase>
+
+## Related docs
+
+- [Merges](/merges/)
+- [Cell](/components/cell/)

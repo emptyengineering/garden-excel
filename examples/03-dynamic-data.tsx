@@ -7,12 +7,12 @@
  * - Apply formulas to cells
  * - Use named ranges with column IDs
  *
- * Run: bun run example:dynamic
+ * Run: npm run example:dynamic (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Column, Group } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Column, Group, Row, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
 
 // Sample employee data
 const employees = [
@@ -92,7 +92,7 @@ const workbook = (
       {/* Dynamic data rows */}
       {employees.map((emp, index) => (
         <Row height={22}>
-          <Group className={index % 2 === 0 ? '' : 'bg-gray-50'}>
+          <Group className={`border-x border-blue-200 ${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
             <Cell value={emp.id} className="text-center" />
             <Cell value={emp.name} />
             <Cell value={emp.department} />
@@ -110,21 +110,29 @@ const workbook = (
       <Row height={25}>
         <Cell value="" colSpan={2} />
         <Cell value="Total Employees:" className="font-bold text-right" />
-        <Cell value={employees.length} className="font-bold text-center bg-indigo-100" />
+        <Cell value={employees.length} format="0" className="font-bold text-center bg-indigo-100" />
         <Cell value="" />
       </Row>
 
       <Row height={25}>
         <Cell value="" colSpan={2} />
         <Cell value="Total Salaries:" className="font-bold text-right" />
-        <Cell formula="SUM(Salaries)" className="font-bold bg-green-100 text-green-800" />
+        <Cell
+          formula="SUM(Salaries)"
+          format='"$"#,##0.00'
+          className="font-bold bg-green-100 text-green-800"
+        />
         <Cell value="" />
       </Row>
 
       <Row height={25}>
         <Cell value="" colSpan={2} />
         <Cell value="Average Salary:" className="font-bold text-right" />
-        <Cell formula="AVERAGE(Salaries)" className="font-bold bg-blue-100 text-blue-800" />
+        <Cell
+          formula="AVERAGE(Salaries)"
+          format='"$"#,##0.00'
+          className="font-bold bg-blue-100 text-blue-800"
+        />
         <Cell value="" />
       </Row>
     </Worksheet>

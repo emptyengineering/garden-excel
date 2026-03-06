@@ -1,47 +1,57 @@
+import type { CellValue } from 'exceljs';
 import ExcelJS from 'exceljs';
-import { mergeDeep } from './utils';
-import { excelwindClasses } from './tailwind';
-import { validateTree } from './validate';
+import { excelwindClasses } from './className';
 import {
   type AnyNode,
+  type CellNode,
+  type ChildNode,
+  type ColumnNode,
+  ImageNode,
   type Processor,
   type RowNode,
-  type WorksheetNode,
-  type ColumnNode,
-  type CellNode,
-  ImageNode,
 } from './types';
 import {
   getFormat,
-  setFormat,
-  setStyle,
-  setWidth,
   isCell,
   isColumn,
   isGroup,
-  isRow,
-  isPrimitive,
   isImage,
+  isPrimitive,
+  isRow,
+  mergeDeep,
+  setFormat,
+  setStyle,
+  setWidth,
 } from './utils';
-import type { CellValue } from 'exceljs';
+import { validateTree } from './validate';
 
 interface RenderContext {
   workbook: ExcelJS.Workbook;
   sheet?: ExcelJS.Worksheet;
   styles: ExcelJS.Style[];
   processors: Processor[];
-  rowSpanState?: { [col: number]: number }; // End row for a span on a given column
+  // Track the last occupied row for each column while handling row spans.
+  rowSpanState?: { [col: number]: number };
   currentRow?: number;
   columnFormats?: (string | undefined)[];
   columnStyles?: (Partial<ExcelJS.Style> | undefined)[];
   groupFormat?: string;
 }
 
+/**
+ * Convert a `className` string into an ExcelJS style object.
+ */
 function classNameToStyle(className?: string) {
   if (!className) return undefined;
   return excelwindClasses(className);
 }
 
+/**
+ * Render a single row node into its final worksheet cells.
+ *
+ * The row render pipeline flattens nested groups, resolves row and cell
+ * processors, applies merges, and writes defined names.
+ */
 function renderRow(rowNode: RowNode, context: RenderContext) {
   const {
     sheet,
@@ -55,7 +65,7 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
   let processedRowNode: RowNode = { ...rowNode };
   const rowIndex = currentRow;
 
-  // Run row-level processors
+  // Run processors before flattening so they can reshape the row.
   context.processors.forEach((processor) => {
     const p = processor(processedRowNode, { rowIndex });
     if (isRow(p)) {
@@ -67,13 +77,13 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
   const rowClassStyle = classNameToStyle(props.className);
   const initialStyle = mergeDeep(...context.styles, rowClassStyle, props.style);
 
-  // Phase 1: Flatten the component tree to get a simple array of cells with inherited styles.
   const allCells: { node: CellNode; groupFormat?: string }[] = [];
-  function flatten(
-    children: AnyNode | AnyNode[] | undefined,
-    inheritedStyle: any,
-    inheritedFormat?: string,
-  ) {
+
+  /**
+   * Flatten nested groups into a linear list of cells while preserving
+   * inherited styles and formats.
+   */
+  function flatten(children: ChildNode, inheritedStyle: any, inheritedFormat?: string) {
     if (!children) return;
     const childrenArray = Array.isArray(children) ? children : [children];
     childrenArray.forEach((child) => {
@@ -99,11 +109,11 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
   }
 
   if (allCells.length === 0) {
-    // Don't add a row if there are no cells to render.
+    // Skip empty rows produced by processors or conditional rendering.
     return;
   }
 
-  // Clean up expired rowSpans from previous rows
+  // Remove row-span reservations that ended before this row.
   if (rowSpanState && rowIndex !== undefined) {
     for (const col in rowSpanState) {
       if (rowSpanState[col] < rowIndex) {
@@ -112,7 +122,7 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
     }
   }
 
-  // Phase 2: Place the flattened cells onto the grid, respecting rowSpans.
+  // Place cells into the next available columns, skipping active row spans.
   const placedCells: { node: CellNode; col: number; groupFormat?: string }[] = [];
   let columnIndex = 1;
   for (const { node, groupFormat } of allCells) {
@@ -120,7 +130,7 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
       columnIndex++;
     }
 
-    // Run cell-level processors for the current cell
+    // Run processors with row and column context once placement is known.
     let processedCellNode = node;
     context.processors.forEach((processor) => {
       const p = processor(processedCellNode, {
@@ -148,7 +158,6 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
     columnIndex += colSpan;
   }
 
-  // Phase 3: Create the row in exceljs
   const maxPlacedCol = placedCells.reduce(
     (max, cell) => Math.max(max, cell.col + (cell.node.props.colSpan || 1) - 1),
     0,
@@ -175,12 +184,12 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
     excelRow.height = props.height;
   }
 
-  // Phase 4: Apply styles and merges for the placed cells
+  // Apply values, styles, formats, merges, and child images cell by cell.
   placedCells.forEach(({ node, col, groupFormat }) => {
     const cell: ExcelJS.Cell = excelRow.getCell(col);
     const colFormat = columnFormats[col - 1];
     const colStyle = columnStyles[col - 1];
-    // Set value, formula, and format
+    // Formula cells may also carry a cached primitive result.
     if (node.props.formula) {
       const v = node.props.value;
       cell.value = { formula: node.props.formula };
@@ -190,7 +199,7 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
     } else if (node.props.value !== undefined) {
       cell.value = node.props.value;
     }
-    // Merge precedence: cell > row > group > column
+    // Style precedence is column -> group -> row -> cell.
     const rowStyle = processedRowNode.props.style;
     const mergedStyle = mergeDeep(
       colStyle,
@@ -199,7 +208,7 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
       node.props.style || {},
     );
     setStyle(cell, mergedStyle);
-    // Determine the format from style, row, group, or column (correct precedence)
+    // Format precedence mirrors the explicit render hierarchy.
     const rowFormat = getFormat(processedRowNode);
     const cellFormat = getFormat(node);
     const format = cellFormat || rowFormat || groupFormat || colFormat;
@@ -224,17 +233,17 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
         ? node.props.children
         : [node.props.children];
       for (const child of children) {
-        if (child && child.type === 'Image') {
-          // Compute default position if not provided
+        if (child && !Array.isArray(child) && child.type === 'Image') {
+          // Derive a fallback image position from the current cell box.
           const imageNode = { ...child };
           if (!imageNode.props.position) {
-            // Estimate width/height from column width and row height
+            // ExcelJS column widths are character-based, so this is approximate.
             const colWidth = sheet.getColumn(col).width || 8;
             const rowHeight = excelRow.height || sheet.properties.defaultRowHeight || 15;
             imageNode.props.position = {
               tl: { col, row: excelRow.number },
               ext: {
-                width: Math.round(colWidth * 7), // Excel column width approx 7px per unit
+                width: Math.round(colWidth * 7),
                 height: Math.round(rowHeight),
               },
             };
@@ -246,17 +255,10 @@ function renderRow(rowNode: RowNode, context: RenderContext) {
   });
 }
 
-function populateDefinedNames(
-  worksheetNode: WorksheetNode,
-  workbook: ExcelJS.Workbook,
-  sheet: ExcelJS.Worksheet,
-) {
-  const children = Array.isArray(worksheetNode.props.children)
-    ? worksheetNode.props.children
-    : [worksheetNode.props.children];
-  const columnNodes: ColumnNode[] = children.filter((c): c is ColumnNode => !!c && isColumn(c));
-  const otherNodes: AnyNode[] = children.filter((c): c is AnyNode => !!c && !isColumn(c));
-
+/**
+ * Apply declared column widths and number formats before rows are rendered.
+ */
+function applyColumnDefinitions(columnNodes: ColumnNode[], sheet: ExcelJS.Worksheet) {
   if (columnNodes.length > 0) {
     sheet.columns = columnNodes.map((node: ColumnNode) => {
       const col: Pick<ExcelJS.Column, 'width' | 'numFmt'> = {};
@@ -269,46 +271,37 @@ function populateDefinedNames(
       return col;
     });
   }
+}
 
-  let currentRowNumber = 1;
-  let dataBlockStartRow = -1;
-  let dataBlockEndRow = -1;
-
-  const findDataRows = (nodes: AnyNode[]) => {
-    nodes.forEach((node) => {
-      if (isRow(node)) {
-        currentRowNumber++;
-      } else if (isGroup(node)) {
-        const groupChildren = Array.isArray(node.props.children)
-          ? node.props.children
-          : [node.props.children];
-        if (node.props.processor || groupChildren.length > 1) {
-          if (dataBlockStartRow === -1) dataBlockStartRow = currentRowNumber;
-          const rowCount = groupChildren.filter((c) => !!c && isRow(c)).length;
-          dataBlockEndRow = currentRowNumber + rowCount - 1;
-        }
-        findDataRows(groupChildren.filter((c): c is AnyNode => !!c));
-      }
-    });
-  };
-  findDataRows(otherNodes);
+/**
+ * Register column-level defined names after row rendering determines height.
+ */
+function populateColumnDefinedNames(
+  columnNodes: ColumnNode[],
+  workbook: ExcelJS.Workbook,
+  sheet: ExcelJS.Worksheet,
+) {
+  const lastRow = sheet.rowCount;
+  if (!lastRow) return;
 
   columnNodes.forEach((node, index) => {
-    if (node.props.id && dataBlockStartRow !== -1 && dataBlockEndRow !== -1) {
-      const colLetter = sheet.getColumn(index + 1).letter;
-      const range = `'${sheet.name}'!$${colLetter}$${dataBlockStartRow}:$${colLetter}$${dataBlockEndRow}`;
-      workbook.definedNames.add(range, node.props.id);
-    }
+    if (!node.props.id) return;
+    const colLetter = sheet.getColumn(index + 1).letter;
+    const range = `'${sheet.name}'!$${colLetter}$1:$${colLetter}$${lastRow}`;
+    workbook.definedNames.add(range, node.props.id);
   });
 }
 
+/**
+ * Insert an image into the worksheet using either a range or absolute position.
+ */
 function renderImage(imageNode: ImageNode, context: RenderContext) {
   const { buffer, extension, range, position, hyperlink, tooltip } = imageNode.props;
   const { sheet, workbook } = context;
 
   if (!sheet || !workbook || !buffer) return;
 
-  // Ensure buffer is a Node.js Buffer
+  // Normalize supported buffer inputs into a Node.js Buffer for ExcelJS.
   let buf: Buffer;
   if (typeof buffer === 'string') {
     buf = Buffer.from(buffer, 'base64');
@@ -321,7 +314,7 @@ function renderImage(imageNode: ImageNode, context: RenderContext) {
   }
 
   const imageId = workbook.addImage({
-    buffer: buf,
+    buffer: buf as any,
     extension,
   });
 
@@ -336,23 +329,29 @@ function renderImage(imageNode: ImageNode, context: RenderContext) {
   }
 }
 
-function render(node: AnyNode | AnyNode[] | undefined, context: RenderContext) {
+/**
+ * Walk the evaluated node tree and emit workbook content.
+ */
+function render(node: ChildNode, context: RenderContext) {
   if (!node) return;
 
   const nodes = Array.isArray(node)
-    ? node.filter((n): n is AnyNode => !!n)
-    : [node].filter((n): n is AnyNode => !!n);
+    ? node.filter((n): n is AnyNode => !!n && !Array.isArray(n))
+    : [node].filter((n): n is AnyNode => !!n && !Array.isArray(n));
 
-  // Helper for row/group rendering (move out of if block)
+  /**
+   * Recursively find rows inside worksheet and group children, carrying forward
+   * inherited styles, processors, formats, and current row position.
+   */
   const findAndRenderRows = (
-    nodesToSearch: AnyNode | AnyNode[] | undefined,
+    nodesToSearch: ChildNode,
     currentContext: RenderContext,
     groupFormat?: string,
   ) => {
     if (!nodesToSearch) return;
     const searchArray = Array.isArray(nodesToSearch)
-      ? nodesToSearch.filter((n): n is AnyNode => !!n)
-      : [nodesToSearch].filter((n): n is AnyNode => !!n);
+      ? nodesToSearch.filter((n): n is AnyNode => !!n && !Array.isArray(n))
+      : [nodesToSearch].filter((n): n is AnyNode => !!n && !Array.isArray(n));
 
     let currentRow = currentContext.currentRow || 1;
     const rowSpanState = currentContext.rowSpanState || {};
@@ -371,7 +370,6 @@ function render(node: AnyNode | AnyNode[] | undefined, context: RenderContext) {
         });
         currentRow++;
       } else if (isGroup(n)) {
-        // Recursively search within groups for rows
         const groupContext: RenderContext = {
           ...currentContext,
           styles: [
@@ -417,10 +415,10 @@ function render(node: AnyNode | AnyNode[] | undefined, context: RenderContext) {
     if (child.type === 'Workbook') {
       render(child.props.children, context);
     } else if (child.type === 'Worksheet') {
-      // Collect column formats and styles
+      // Precompute column-level defaults before row rendering begins.
       const children = Array.isArray(child.props.children)
-        ? child.props.children.filter((n): n is AnyNode => !!n)
-        : [child.props.children].filter((n): n is AnyNode => !!n);
+        ? child.props.children.filter((n): n is AnyNode => !!n && !Array.isArray(n))
+        : [child.props.children].filter((n): n is AnyNode => !!n && !Array.isArray(n));
       const columnNodes = children.filter(
         (child): child is ColumnNode => !!child && isColumn(child),
       );
@@ -431,7 +429,7 @@ function render(node: AnyNode | AnyNode[] | undefined, context: RenderContext) {
       const sheet = context.workbook.addWorksheet(child.props.name, {
         properties: child.props.properties,
       });
-      populateDefinedNames(child, context.workbook, sheet);
+      applyColumnDefinitions(columnNodes, sheet);
       const newSheetContext: RenderContext = {
         ...context,
         sheet,
@@ -440,15 +438,16 @@ function render(node: AnyNode | AnyNode[] | undefined, context: RenderContext) {
         columnStyles,
       };
 
-      // Render images at the worksheet level
+      // Render worksheet-scoped images before processing row content.
       const imageNodes = children.filter((n): n is ImageNode => !!n && isImage(n));
       for (const imageNode of imageNodes) {
         renderImage(imageNode, { ...newSheetContext, sheet });
       }
 
-      // Exclude Image nodes from row/group rendering
+      // Image nodes are handled separately from row traversal.
       const nonImageChildren = children.filter((n) => !isImage(n));
       findAndRenderRows(nonImageChildren, newSheetContext);
+      populateColumnDefinedNames(columnNodes, context.workbook, sheet);
     } else if (isImage(child)) {
     } else {
       throw new Error(`Unknown node type: ${child.type}`);
@@ -457,17 +456,19 @@ function render(node: AnyNode | AnyNode[] | undefined, context: RenderContext) {
 }
 
 /**
- * Offsets cell references in Excel formulas by a given row offset.
- * This is needed when importing template content to a different position.
+ * Offset row references in an Excel formula by a row delta.
+ *
+ * This is used when template content is inserted lower in the destination
+ * worksheet and formulas need to keep pointing at the same logical rows.
  *
  * @param formula - The original Excel formula
- * @param rowOffset - The number of rows to offset (positive = down, negative = up)
- * @returns The formula with updated cell references
+ * @param rowOffset - The number of rows to offset, positive or negative
+ * @returns The formula with row references shifted
  */
 function offsetFormulaReferences(formula: string, rowOffset: number): string {
   if (rowOffset === 0) return formula;
   return formula.replace(/([A-Z]+)(\d+)/g, (match, col, row) => {
-    const newRow = parseInt(row) + rowOffset;
+    const newRow = Number.parseInt(row, 10) + rowOffset;
     if (newRow < 1) {
       console.warn(`[Formula Offset] Row ${newRow} would be invalid, keeping original: ${match}`);
       return match;
@@ -477,18 +478,19 @@ function offsetFormulaReferences(formula: string, rowOffset: number): string {
 }
 
 /**
- * Expands cell references in Excel formulas to ranges by adding a specified number of rows.
- * This is useful for converting single cell references to ranges that span multiple rows.
+ * Expand single-cell references into vertical ranges.
+ *
+ * For example, increasing `E15` by `6` produces `E15:E21`.
  *
  * @param formula - The original Excel formula
- * @param rangeRows - The number of additional rows to include in the range (e.g., 6 means E15:E21)
- * @returns The formula with expanded cell references as ranges
+ * @param rangeRows - The number of additional rows to include in the range
+ * @returns The formula with expanded vertical ranges
  */
 function _expandFormulaRanges(formula: string, rangeRows: number): string {
   if (rangeRows <= 0) return formula;
 
   return formula.replace(/([A-Z]+)(\d+)(?::[A-Z]+\d+)?/g, (match, col, row) => {
-    const startRow = parseInt(row);
+    const startRow = Number.parseInt(row, 10);
     const endRow = startRow + rangeRows;
     if (endRow < startRow) {
       console.warn(
@@ -500,10 +502,16 @@ function _expandFormulaRanges(formula: string, rangeRows: number): string {
   });
 }
 
-// Helper: Convert ExcelJS worksheet to our node tree
+/**
+ * Convert an ExcelJS worksheet into row, cell, and image nodes.
+ *
+ * This is used by template rendering so imported sheets can flow back through
+ * the same renderer as hand-authored JSX trees.
+ */
 async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): Promise<AnyNode[]> {
   const rows: RowNode[] = [];
-  // Build a map of merged rectangles: { [topLeftAddress]: { left, top, right, bottom } }
+
+  // Map each merge's top-left cell to its rectangle for quick lookup.
   const mergeRects: Record<string, { left: number; top: number; right: number; bottom: number }> =
     {};
   const mergesObj = (ws as any)._merges || {};
@@ -517,14 +525,14 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
     };
   }
 
-  // Instead of ws.eachRow, iterate from 1 to ws.rowCount to preserve empty rows
+  // Iterate by row index so template empty rows are preserved.
   for (let rowNumber = 1; rowNumber <= ws.rowCount; rowNumber++) {
     const row = ws.getRow(rowNumber);
     const cells: (CellNode | null)[] = [];
     for (let colNumber = 1; colNumber <= ws.columnCount; colNumber++) {
       const cell = row.getCell(colNumber);
       const address = cell.address;
-      // Check if this cell is the top-left of a merge
+      // Only emit merged cells once, from their top-left anchor.
       if (mergeRects[address]) {
         const rect = mergeRects[address];
         const colSpan = rect.right - rect.left + 1;
@@ -547,7 +555,7 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
         });
         continue;
       }
-      // Check if this cell is covered by any merge (but not top-left)
+      // Skip cells that belong to a merge already emitted elsewhere.
       let isCovered = false;
       for (const rect of Object.values(mergeRects)) {
         if (
@@ -556,7 +564,7 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
           colNumber >= rect.left &&
           colNumber <= rect.right
         ) {
-          // If not the top-left
+          // Exclude non-anchor cells that fall inside a merged rectangle.
           if (!(rowNumber === rect.top && colNumber === rect.left)) {
             isCovered = true;
             break;
@@ -567,7 +575,7 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
         cells.push(null);
         continue;
       }
-      // Normal cell
+      // Preserve unmerged cells as regular cell nodes.
       const style = cell.style || {};
       const format = cell.numFmt;
       const formula = cell.formula;
@@ -583,7 +591,7 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
         props: cellProps,
       });
     }
-    // If the row is empty (all cells are null/empty), still add an empty RowNode
+    // Preserve empty rows so imported templates keep their spacing.
     const _hasNonEmptyCell = cells.some(
       (cell) =>
         cell &&
@@ -598,17 +606,16 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
       },
     });
   }
-  // After extracting rows, extract images
+  // Extract worksheet images after rows so both can be returned together.
   const imageNodes: ImageNode[] = [];
   if (typeof ws.getImages === 'function') {
     const images = ws.getImages();
     for (const img of images) {
-      // img.imageId, img.range, etc.
       const workbook = ws.workbook as ExcelJS.Workbook;
       if (typeof workbook.getImage === 'function') {
         const image = workbook.getImage(img.imageId as any);
         if (image?.buffer && image.extension) {
-          // Ensure buffer is a Buffer
+          // Normalize image payloads so they can be re-rendered later.
           let buf: Buffer;
           if (image.buffer instanceof Buffer) {
             buf = image.buffer;
@@ -619,38 +626,18 @@ async function worksheetToNodes(ws: ExcelJS.Worksheet, rowOffset: number = 0): P
           } else {
             continue;
           }
-
-          /*
-          @TODO @REMOVE @DEBUG
-          const columnWidthToPixels = (width: number) => Math.floor(width * 7.5); // rough
-          const rowHeightToPixels = (height: number) => Math.floor(height * 1.33); // rough
-          const colPx = columnWidthToPixels(ws.getColumn(1).width ?? 8.43);
-          const rowPx = rowHeightToPixels(ws.getRow(rowOffset).height ?? 15);
-          console.log("RANGE", img.range);
-          */
-
           imageNodes.push({
             type: 'Image',
             props: {
-              buffer: buf,
+              buffer: buf as any,
               extension: image.extension,
               range: img.range as any,
-              /*
-              position: {
-                tl: { col: 0, row: rowOffset },
-                ext: {
-                  width: Math.round(100 * 7), // Excel column width approx 7px per unit
-                  height: Math.round(100),
-                },
-              }
-              */
             },
           });
         }
       }
     }
   }
-  // Return both rows and images
   return [...rows, ...imageNodes];
 }
 
@@ -658,6 +645,12 @@ interface EvaluationContext {
   currentRow: number;
 }
 
+/**
+ * Evaluate template nodes and recurse through child trees.
+ *
+ * Template nodes load XLSX content and expand into ordinary render nodes so
+ * the rest of the pipeline can treat them like handwritten JSX.
+ */
 async function evaluate(
   node: any,
   context: EvaluationContext,
@@ -677,24 +670,26 @@ async function evaluate(
   }
 
   if (node.type === 'Template') {
-    // Load the Excel file and convert to nodes
+    // Load the source workbook and convert its first sheet into render nodes.
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(node.props.src);
-    const ws = wb.worksheets[0]; // For now, just the first worksheet
+    const ws = wb.worksheets[0];
 
     if (node.props.data) {
-      // Use expandTemplateRows to generate expanded rows (now returns array directly)
-      const expandedRows = expandTemplateRows(
+      // Expand placeholder rows before converting the sheet back into nodes.
+      const { expandedRows, rowStartIndex } = expandTemplateRows(
         ws,
         node.props.data,
         '{{',
         '}}',
         node.props.rangeRows || 0,
       );
-      ws.spliceRows(context.currentRow - expandedRows.length - 1, 1, ...expandedRows);
+      if (rowStartIndex !== -1) {
+        ws.spliceRows(rowStartIndex, 1, ...expandedRows);
+      }
     }
 
-    // Pass the current row position to offset formulas correctly
+    // Offset imported formulas so they stay aligned after insertion.
     const rows = await worksheetToNodes(ws, context.currentRow - 1);
     context.currentRow += rows.length;
     return rows;
@@ -712,17 +707,13 @@ async function evaluate(
 }
 
 /**
- * Evaluates and processes Template nodes by loading Excel files and converting them to node arrays.
+ * Render a workbook node tree into an ExcelJS workbook instance.
  *
- * This function handles the special case of Template nodes by:
- * - Loading the specified Excel file using the src property
- * - Converting the worksheet content to a node tree structure
- * - Returning the converted nodes for further processing
+ * This first expands template nodes, validates the final tree shape, then runs
+ * the normal renderer over the evaluated node graph.
  *
- * For non-Template nodes, it recursively processes children and returns the node unchanged.
- *
- * @param node - The node to evaluate, which may be a Template node or any other node type
- * @returns Promise resolving to the evaluated node tree, or null if node is falsy
+ * @param root - The workbook node tree to render
+ * @returns A populated ExcelJS workbook
  */
 export async function renderToWorkbook(root: any): Promise<ExcelJS.Workbook> {
   const evaluatedTree = await evaluate(root, { currentRow: 1 });
@@ -744,15 +735,17 @@ export async function renderToWorkbook(root: any): Promise<ExcelJS.Workbook> {
 }
 
 /**
- * Expand template rows in a worksheet by duplicating the data row for each data object,
- * replacing placeholders, and preparing formula updates.
+ * Expand a template worksheet's placeholder row into concrete data rows.
  *
- * @param ws - The ExcelJS worksheet
- * @param data - The data object: { columns: [{name, aliases}], rows: [objects], ... }
- * @param openPlaceholder - Opening token for placeholders (default: '{{')
- * @param closePlaceholder - Closing token for placeholders (default: '}}')
- * @param rangeRows - The number of additional rows to include in the range
- * @returns expandedRows
+ * The template is discovered by matching header labels first, then locating the
+ * following row that contains `{{placeholder}}` expressions.
+ *
+ * @param ws - The ExcelJS worksheet to inspect
+ * @param data - Template metadata and row values used for expansion
+ * @param openPlaceholder - Reserved for custom placeholder delimiters
+ * @param closePlaceholder - Reserved for custom placeholder delimiters
+ * @param rangeRows - Reserved for future range-expansion behavior
+ * @returns The expanded row values and the row index that should be replaced
  */
 function expandTemplateRows(
   ws: ExcelJS.Worksheet,
@@ -760,7 +753,7 @@ function expandTemplateRows(
   _openPlaceholder = '{{',
   _closePlaceholder = '}}',
   _rangeRows: number = 0,
-): CellValue[][] {
+): { expandedRows: CellValue[][]; rowStartIndex: number } {
   const placeholderRegex = /\{\{\s*(.*?)\s*\}\}/;
   const columnsConfig = data.columns || [];
   const template = {
@@ -768,7 +761,7 @@ function expandTemplateRows(
     rows: { matches: 0, rowStartIndex: -1, colStartIndex: -1 },
   };
 
-  // Identify columns
+  // Locate the header row by matching configured column names.
   for (let rowNumber = 1; rowNumber <= ws.rowCount; rowNumber++) {
     const row = ws.getRow(rowNumber);
     const values = row.values;
@@ -790,7 +783,7 @@ function expandTemplateRows(
     }
   }
 
-  // Identify data template row
+  // Locate the placeholder row immediately below the header row.
   if (template.columns.rowStartIndex !== -1) {
     const row = ws.getRow(template.columns.rowStartIndex + 1);
     const values = row.values;
@@ -813,6 +806,9 @@ function expandTemplateRows(
   if (template.columns.matches === 0) throw new Error('Columns template row not found');
   if (template.rows.matches === 0) throw new Error('Data template row not found');
 
+  /**
+   * Replace a single placeholder inside a cell value.
+   */
   function _replacePlaceholders(cell: ExcelJS.Cell, obj: any) {
     if (typeof cell.value === 'string') {
       const match = cell.value.match(placeholderRegex);
@@ -822,11 +818,11 @@ function expandTemplateRows(
     }
   }
 
-  // Build the final expanded rows array (as arrays of cell values)
+  // Materialize each data object as a new row based on the template row shape.
   const expandedRows: CellValue[][] = [];
   for (let rowNumber = 1; rowNumber <= ws.rowCount; rowNumber++) {
     if (rowNumber === template.rows.rowStartIndex) {
-      // Insert all expanded data rows here
+      // Replace the template row with one row per input object.
       for (const [i, _row] of data.rows.entries()) {
         const templateRow = ws.getRow(template.rows.rowStartIndex);
         const newRow: CellValue[] = [];
@@ -839,6 +835,5 @@ function expandTemplateRows(
       }
     }
   }
-  // Expand formulas in the rows if rangeRows > 0
-  return expandedRows;
+  return { expandedRows, rowStartIndex: template.rows.rowStartIndex };
 }

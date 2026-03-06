@@ -1,0 +1,31 @@
+---
+title: Dynamic Data Example
+description: Array-driven rows with named ranges, formulas, and formatting.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/03-dynamic-data.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-03.png"
+  imageAlt="Dynamic data output"
+  source={source}
+  sourcePath="examples/03-dynamic-data.tsx"
+>
+  ## What it demonstrates
+
+  - rendering rows from application data
+  - column formats for dates and currency
+  - named ranges with column `id`
+  - formulas such as `SUM(Salaries)` and `AVERAGE(Salaries)`
+
+  ## Why it matters
+
+  This example feels the most like production reporting code: data in, workbook out, with Excel-native formulas layered on top.
+</ExampleShowcase>
+
+## Related docs
+
+- [Format](/format/)
+- [Formula](/formula/)
+- [Column](/components/column/)

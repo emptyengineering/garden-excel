@@ -9,14 +9,14 @@
  * Processors are functions that receive a node and context,
  * and can return a modified node with different styles/values.
  *
- * Run: bun run example:processors
+ * Run: npm run example:processors (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Column, Group } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
-import { mergeDeep, isRow } from '../src/utils';
-import type { Processor, AnyNode, ProcessorContext } from '../src/types';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Column, Group, Row, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
+import type { AnyNode, Processor, ProcessorContext } from '../src/types';
+import { isRow, mergeDeep } from '../src/utils';
 
 /**
  * Zebra stripe processor - applies alternating background colors to rows

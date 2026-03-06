@@ -7,6 +7,10 @@ export default defineConfig({
     './src/jsx-runtime/jsx-dev-runtime.ts',
   ],
   outDir: './dist',
-  splitting: false,
+  hash: false,
   format: ['esm'],
+  outExtensions: () => ({
+    js: '.js',
+    dts: '.d.ts',
+  }),
 });

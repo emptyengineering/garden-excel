@@ -6,7 +6,7 @@ description: Tailwind-style utility classes for Excel styles.
 Use `className` as the canonical way to style elements. The `excelwindClasses` utility is available for manual conversions.
 
 ```tsx
-import { excelwindClasses } from "@workspace/excelwind";
+import { excelwindClasses } from "@gavin-lynch/excelwind";
 
 <Cell value="Total" className="font-bold bg-blue-600 text-white text-right" />
 <Cell value="Total" style={excelwindClasses("font-bold bg-blue-600 text-white text-right")} />
@@ -109,6 +109,13 @@ Notes:
 
 ## Merge order
 Styles are merged in this order: column -> group -> row -> cell.
+
+## See it in practice
+
+![Styling example output](https://gavin-lynch.github.io/excelwind/examples/expected/output-02.png)
+
+- Source: `examples/02-styling.tsx`
+- Shows title styling, shared header styles, alternating row backgrounds, status pills, and border composition
 
 ## Related topics
 - Properties: what `excelwindClasses` can set

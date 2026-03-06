@@ -1,24 +1,26 @@
-import type { Alignment, Border, Font, Style } from 'exceljs';
 import { formatHex } from 'culori';
+import type { Alignment, Border, Font, Style } from 'exceljs';
 import twColors from 'tailwindcss/colors';
 
-// --- Color Map Generation ---
+/**
+ * Build a lookup from Tailwind color tokens to ExcelJS-compatible ARGB values.
+ */
 const generateColorMap = (): Record<string, string> => {
   const colorMap: Record<string, string> = {};
 
   for (const [colorName, colorValue] of Object.entries(twColors)) {
     if (typeof colorValue === 'string') {
-      // Handles simple colors like 'black', 'white', and oklch strings
+      // Handle simple colors like `black`, `white`, and direct OKLCH strings.
       try {
         const hex = formatHex(colorValue);
         if (hex) {
           colorMap[colorName] = hex.substring(1).toUpperCase();
         }
       } catch (_e) {
-        // culori will throw on non-color strings like 'inherit', which we can ignore.
+        // Ignore non-color tokens such as `inherit`.
       }
     } else if (typeof colorValue === 'object' && colorValue !== null) {
-      // Handle colors with shades like 'blue', 'red', etc.
+      // Handle palette objects with shades such as `blue-200`.
       for (const [shade, oklch] of Object.entries(colorValue)) {
         if (typeof oklch === 'string') {
           try {
@@ -27,7 +29,7 @@ const generateColorMap = (): Record<string, string> => {
               colorMap[`${colorName}-${shade}`] = hex.substring(1).toUpperCase();
             }
           } catch (_e) {
-            // Ignore if culori fails to parse
+            // Ignore shade entries that culori cannot parse.
           }
         }
       }
@@ -97,13 +99,18 @@ const borderSideMap: Record<string, BorderSide[]> = {
   'border-y': ['top', 'bottom'],
 };
 
-// --- Main Function ---
+/**
+ * Convert a Tailwind-like class string into an ExcelJS style object.
+ *
+ * Unsupported classes throw so styling mistakes fail fast during render.
+ */
 export function excelwindClasses(classString: string): Partial<Style> {
   const classes = classString.split(' ').filter(Boolean);
   const style: Partial<Style> = {};
 
-  // --- Parsers ---
-
+  /**
+   * Map exact utility class names to their style fields.
+   */
   const parseExactMatches = (cls: string): boolean => {
     if (fontSizes[cls]) {
       if (!style.font) style.font = {};
@@ -123,6 +130,9 @@ export function excelwindClasses(classString: string): Partial<Style> {
     return false;
   };
 
+  /**
+   * Map `text-*` color classes to font colors.
+   */
   const parseTextColor = (cls: string): boolean => {
     if (cls.startsWith('text-')) {
       const colorKey = cls.substring(5);
@@ -135,6 +145,9 @@ export function excelwindClasses(classString: string): Partial<Style> {
     return false;
   };
 
+  /**
+   * Map `bg-*` color classes to solid fill colors.
+   */
   const parseBackgroundColor = (cls: string): boolean => {
     if (cls.startsWith('bg-')) {
       const colorKey = cls.substring(3);
@@ -152,17 +165,16 @@ export function excelwindClasses(classString: string): Partial<Style> {
 
   const parsers = [parseExactMatches, parseTextColor, parseBackgroundColor];
 
-  // --- Border Info ---
   const borderInfo: {
     sides: BorderSide[];
     style?: Border['style'];
     color?: { argb: string };
   } = { sides: [] };
 
-  // --- Processing Loop ---
+  // Process each utility and collect border fragments before composing the final style.
   for (const cls of classes) {
     let recognized = false;
-    // Handle borders separately since they are composed of multiple classes
+    // Border utilities split behavior across side, color, and thickness tokens.
     if (cls.startsWith('border')) {
       const parts = cls.split('-');
       if (borderSideMap[cls]) {
@@ -180,20 +192,20 @@ export function excelwindClasses(classString: string): Partial<Style> {
         }
       }
     }
-    // Apply other parsers
+    // Apply non-border parsers after border-specific handling.
     for (const parser of parsers) {
       if (parser(cls)) {
         recognized = true;
         break;
       }
     }
-    // If not recognized by any parser, throw an error
+    // Fail fast so typos do not silently disappear from the rendered workbook.
     if (!recognized) {
       throw new Error(`[excelwindClasses] Unknown or unsupported class: '${cls}'`);
     }
   }
 
-  // --- Finalize Styles ---
+  // Compose the final ExcelJS border object once all border tokens have been seen.
   if (borderInfo.sides.length > 0) {
     style.border = {};
     const borderStyle: Partial<Border> = {};

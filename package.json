@@ -1,10 +1,14 @@
 {
-  "name": "@workspace/excelwind",
-  "version": "0.0.1",
+  "name": "@gavin-lynch/excelwind",
+  "version": "0.1.3",
   "description": "JSX-based Excel generator with Tailwind-style styling",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,31 +24,52 @@
     }
   },
   "scripts": {
-    "build": "tsdown -p tsconfig.json src/index.ts src/jsx-runtime/jsx-runtime.ts src/jsx-runtime/jsx-dev-runtime.ts",
-    "lint": "bunx --bun biome lint",
-    "lint:fix": "bunx --bun biome lint --write",
-    "format": "bunx --bun biome format --write",
-    "examples": "bun run examples/run-all.ts",
-    "example:basic": "bun run examples/01-basic.tsx",
-    "example:styling": "bun run examples/02-styling.tsx",
-    "example:dynamic": "bun run examples/03-dynamic-data.tsx",
-    "example:processors": "bun run examples/04-processors.tsx",
-    "example:merged": "bun run examples/05-merged-cells.tsx",
-    "example:templates": "bun run examples/06-templates.tsx",
-    "example:images": "bun run examples/07-images.tsx",
-    "docs:dev": "cd docs && bun run dev",
-    "docs:build": "cd docs && bun run build",
-    "docs:preview": "cd docs && bun run preview"
+    "build": "tsdown -p tsconfig.json",
+    "prepack": "tsdown -p tsconfig.json",
+    "postinstall": "simple-git-hooks",
+    "lint": "biome lint",
+    "lint:fix": "biome lint --write",
+    "format": "biome format --write",
+    "examples": "tsx examples/run-all.ts",
+    "examples:all": "tsx examples/run-all.ts",
+    "example:basic": "tsx examples/01-basic.tsx",
+    "example:styling": "tsx examples/02-styling.tsx",
+    "example:dynamic": "tsx examples/03-dynamic-data.tsx",
+    "example:processors": "tsx examples/04-processors.tsx",
+    "example:merged": "tsx examples/05-merged-cells.tsx",
+    "example:templates": "tsx examples/06-templates.tsx",
+    "example:images": "tsx examples/07-images.tsx",
+    "example:complex-merge": "tsx examples/08-complex-merge.tsx",
+    "docs:dev": "bun run --cwd docs dev",
+    "docs:build": "bun run --cwd docs build",
+    "docs:preview": "bun run --cwd docs preview",
+    "check": "biome lint && vitest run",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@types/culori": "^4.0.0",
-    "@types/tailwindcss": "^3.1.0",
     "culori": "^4.0.1",
     "exceljs": "^4.3.0",
     "tailwindcss": "^4.1.10"
   },
   "devDependencies": {
-    "tsdown": "^0.13.0",
-    "typescript": "^5.0.0"
+    "@biomejs/biome": "^2.4.6",
+    "@types/culori": "^4.0.0",
+    "@types/tailwindcss": "^3.1.0",
+    "lint-staged": "^16.2.0",
+    "simple-git-hooks": "^2.13.1",
+    "tsdown": "0.21.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "bunx lint-staged",
+    "pre-push": "bunx vitest run"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,json,astro}": [
+      "biome check --write"
+    ]
   }
 }

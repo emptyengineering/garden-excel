@@ -2,7 +2,7 @@
  * Run All Examples
  *
  * This script runs all example files and generates their output.
- * Run: bun run examples
+ * Run: npm run examples (or pnpm/bun equivalent)
  */
 
 import { spawn } from 'node:child_process';
@@ -14,9 +14,11 @@ const examplesDir = new URL('.', import.meta.url).pathname;
 async function runExample(file: string): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log(`\n📄 Running ${file}...`);
-    const proc = spawn('bun', ['run', join(examplesDir, file)], {
+    const binary = process.platform === 'win32' ? 'tsx.cmd' : 'tsx';
+    const proc = spawn(binary, [join(examplesDir, file)], {
       stdio: 'inherit',
       cwd: join(examplesDir, '..'),
+      env: process.env,
     });
 
     proc.on('close', (code) => {
@@ -36,7 +38,9 @@ async function main() {
   const examples = files.filter((f) => f.endsWith('.tsx') && f.match(/^\d{2}-/)).sort();
 
   console.log(`Found ${examples.length} examples to run:`);
-  examples.forEach((e) => console.log(`  - ${e}`));
+  examples.forEach((e) => {
+    console.log(`  - ${e}`);
+  });
 
   for (const example of examples) {
     try {

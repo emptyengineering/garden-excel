@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.1.1/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,7 +7,6 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["src/**/*", "examples/**/*", "docs/**/*", "*.{json,md,mdx,ts,tsx,mjs}"],
     "maxSize": 2000000
   },
   "formatter": {
@@ -23,8 +22,7 @@
       },
       "nursery": {},
       "style": {
-        "useImportType": "off",
-        "noNestedTernary": "error"
+        "useImportType": "off"
       },
       "suspicious": {
         "noExplicitAny": "off"
@@ -36,5 +34,18 @@
       "quoteStyle": "single",
       "jsxQuoteStyle": "double"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["docs/**/*.astro"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "off",
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    }
+  ]
 }

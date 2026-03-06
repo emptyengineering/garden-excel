@@ -1,0 +1,29 @@
+---
+title: Processors Example
+description: Render-time row transformations and conditional styling.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/04-processors.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-04.png"
+  imageAlt="Processors example output"
+  source={source}
+  sourcePath="examples/04-processors.tsx"
+>
+  ## What it demonstrates
+
+  - a `Group` processor that adds zebra striping
+  - value-driven status styling in normal JSX
+  - mixing processors with ordinary row and cell declarations
+
+  ## Why it matters
+
+  Processors let you keep repetitive or rule-based presentation logic out of your JSX tree and apply it at render time instead.
+</ExampleShowcase>
+
+## Related docs
+
+- [Processors](/processors/)
+- [Group](/components/group/)

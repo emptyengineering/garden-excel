@@ -31,3 +31,16 @@ Use `position` to specify exact bounds:
   position={{ tl: { col: 0, row: 0 }, ext: { width: 120, height: 48 } }}
 />
 ```
+
+## See it in practice
+
+![Images example output](https://gavin-lynch.github.io/excelwind/examples/expected/output-07.png)
+
+- Source: `examples/07-images.tsx`
+- Demonstrates base64-backed images, file-backed images, and cell-child images with explicit sizing
+
+## Tips
+
+- use worksheet-level images for logos, banners, and page decoration
+- use cell-child images when an image conceptually belongs to a row of data
+- specify `position` when you want predictable sizing instead of the default cell-based estimate

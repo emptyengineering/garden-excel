@@ -6,15 +6,17 @@ export interface BaseNode<T extends string, P> {
   props: P;
 }
 
+export type ChildNode = AnyNode | ChildNode[] | null | undefined | false;
+
 // Prop types
 export interface WorkbookProps {
-  children?: AnyNode | AnyNode[];
+  children?: ChildNode;
 }
 
 export interface WorksheetProps {
   name: string;
   properties?: Partial<WorksheetProperties>;
-  children?: AnyNode | AnyNode[];
+  children?: ChildNode;
 }
 
 interface RenderProps {
@@ -34,14 +36,14 @@ export interface GroupProps extends RenderProps {
   id?: string;
   style?: Partial<Style>;
   processor?: Processor;
-  children?: AnyNode | AnyNode[];
+  children?: ChildNode;
 }
 
 export interface RowProps extends RenderProps {
   id?: string;
   style?: Partial<Style>;
   height?: number;
-  children?: AnyNode | AnyNode[];
+  children?: ChildNode;
   formula?: string;
   format?: string;
 }
@@ -51,7 +53,7 @@ export interface CellProps extends RenderProps {
   value?: CellValue;
   colSpan?: number;
   rowSpan?: number;
-  children?: AnyNode | AnyNode[];
+  children?: ChildNode;
   // Cell can now have children (e.g., for images)
 }
 

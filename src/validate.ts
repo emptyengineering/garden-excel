@@ -1,13 +1,20 @@
-import { AnyNode } from './types';
+import type { AnyNode, ChildNode } from './types';
 
-export function validateTree(node: AnyNode | AnyNode[], parentType?: string) {
+/**
+ * Validate parent-child relationships in the custom workbook tree.
+ *
+ * This catches invalid JSX structures early, before rendering starts.
+ */
+export function validateTree(node: ChildNode, parentType?: string) {
   if (!node) return;
   if (Array.isArray(node)) {
-    node.forEach((child) => validateTree(child, parentType));
+    node.forEach((child) => {
+      validateTree(child, parentType);
+    });
     return;
   }
 
-  const { type, props } = node;
+  const { type, props } = node as AnyNode;
   const children = props && 'children' in props ? props.children : undefined;
 
   switch (type) {

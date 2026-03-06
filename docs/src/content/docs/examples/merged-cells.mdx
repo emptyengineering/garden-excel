@@ -1,0 +1,30 @@
+---
+title: Merged Cells Example
+description: Practical report layouts built with rowSpan and colSpan.
+---
+
+import ExampleShowcase from '../../../components/ExampleShowcase.astro';
+import source from '../../../../../examples/05-merged-cells.tsx?raw';
+
+<ExampleShowcase
+  imageSrc="/examples/expected/output-05.png"
+  imageAlt="Merged cells example output"
+  source={source}
+  sourcePath="examples/05-merged-cells.tsx"
+>
+  ## What it demonstrates
+
+  - full-width title and subtitle rows
+  - vertically merged labels for grouped sections
+  - mixed `rowSpan` and `colSpan` summary blocks
+  - report-style layout without manual cell addressing
+
+  ## Why it matters
+
+  This is the clearest example of how Excelwind turns JSX structure into a non-trivial spreadsheet layout.
+</ExampleShowcase>
+
+## Related docs
+
+- [Merges](/merges/)
+- [Cell](/components/cell/)

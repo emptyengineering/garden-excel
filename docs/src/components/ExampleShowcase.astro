@@ -1,0 +1,26 @@
+---
+import { Code } from 'astro/components';
+
+interface Props {
+  imageSrc: string;
+  imageAlt: string;
+  source: string;
+  sourcePath: string;
+}
+
+const { imageSrc, imageAlt, source, sourcePath } = Astro.props;
+const resolvedImageSrc = imageSrc.startsWith('/')
+  ? `${import.meta.env.BASE_URL.replace(/\/$/, '')}${imageSrc}`
+  : imageSrc;
+---
+
+<div class="example-showcase">
+  <p class="example-showcase__label">Preview</p>
+  <img class="example-showcase__image" src={resolvedImageSrc} alt={imageAlt} loading="lazy" />
+
+  <slot />
+
+  <p class="example-showcase__label">Source</p>
+  <p class="example-showcase__path"><code>{sourcePath}</code></p>
+  <Code code={source} lang="tsx" />
+</div>

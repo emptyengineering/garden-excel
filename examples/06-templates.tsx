@@ -11,12 +11,12 @@
  * - Forms with specific layouts
  * - Reports with company branding
  *
- * Run: bun run example:templates
+ * Run: npm run example:templates (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Template, Group } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Group, Row, Template, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
 
 // Sample invoice data
 const invoiceData = {

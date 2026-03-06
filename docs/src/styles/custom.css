@@ -1,0 +1,35 @@
+.site-title img {
+  height: 2rem;
+  width: auto;
+  border-radius: 0.35rem;
+}
+
+.example-showcase {
+  display: block;
+  margin: 1.5rem 0 2rem;
+}
+
+.example-showcase__label {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-color-text-accent);
+}
+
+.example-showcase__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+}
+
+.example-showcase__path {
+  margin: 0 0 0.75rem;
+}
+
+.example-showcase__path code {
+  font-size: 0.9rem;
+}

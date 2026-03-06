@@ -1,15 +1,22 @@
 /// <reference path="../jsx-types.d.ts" />
+
+/**
+ * Create a JSX element for this library's custom runtime.
+ *
+ * Component functions are invoked directly and intrinsic tags are left as raw
+ * objects so TypeScript can reject them while the runtime stays minimal.
+ */
 function jsx(type: any, props: any) {
-  // The 'key' argument is for React compatibility, but we can ignore it here.
-  // The custom components are functions that return the element object.
   if (typeof type === 'function') {
     return type(props);
   }
-  // For potential intrinsic elements (though not used in this project).
+
   return { type, props };
 }
 
-// jsxs is the same as jsx for this simple implementation.
-// It's an optimization for multiple children in React.
 export { jsx, jsx as jsxs };
+
+/**
+ * Pass fragment children through unchanged.
+ */
 export const Fragment = ({ children }: { children: any }) => children;

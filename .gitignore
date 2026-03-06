@@ -1,4 +1,38 @@
-examples/output/*.xlsx
+# Dependencies
+node_modules/
 docs/node_modules/
+
+# Build output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Docs build output
 docs/dist/
 docs/.astro/
+
+# Example output
+examples/output/*.xlsx
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp

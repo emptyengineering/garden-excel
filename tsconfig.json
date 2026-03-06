@@ -17,6 +17,6 @@
       "@jsx-runtime/*": ["jsx-runtime/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/**/*", "examples/**/*"],
   "exclude": ["node_modules", "dist"]
 }

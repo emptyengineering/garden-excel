@@ -7,12 +7,12 @@
  * - Defining Columns
  * - Adding Rows and Cells
  *
- * Run: bun run example:basic
+ * Run: npm run example:basic (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Column } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Column, Row, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
 
 const workbook = (
   <Workbook>

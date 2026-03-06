@@ -6,7 +6,8 @@ description: A comprehensive example that uses most features.
 This example combines components, styling, processors, templates, merges, and images into a single workbook.
 
 ```tsx
-/** @jsxImportSource @workspace/excelwind */
+/** @jsxImportSource @gavin-lynch/excelwind */
+import { writeFile } from 'node:fs/promises';
 import {
   Workbook,
   Worksheet,
@@ -20,7 +21,7 @@ import {
   mergeDeep,
   isRow,
   type Processor,
-} from "@workspace/excelwind";
+} from "@gavin-lynch/excelwind";
 
 const zebraStripe: Processor = (node, ctx) => {
   if (!isRow(node) || ctx.rowIndex === undefined) return node;
@@ -103,7 +104,7 @@ const workbook = await render(
   </Workbook>
 );
 
-await Bun.write("kitchen-sink.xlsx", await workbook.xlsx.writeBuffer());
+await writeFile('kitchen-sink.xlsx', Buffer.from(await workbook.xlsx.writeBuffer()));
 ```
 
 Notes

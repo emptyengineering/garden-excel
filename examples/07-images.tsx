@@ -7,12 +7,12 @@
  * - Position and size images
  * - Add image tooltips
  *
- * Run: bun run example:images
+ * Run: npm run example:images (or pnpm/bun equivalent)
  */
 
-import { Workbook, Worksheet, Row, Cell, Column, Image } from '../src/components';
-import { renderToWorkbook as render } from '../src/renderRows';
 import { writeFile } from 'node:fs/promises';
+import { Cell, Column, Image, Row, Workbook, Worksheet } from '../src/components';
+import { renderToWorkbook as render } from '../src/renderRows';
 
 // A small sample PNG image encoded as base64 (a simple icon)
 const sampleBase64Image =
